@@ -101,7 +101,7 @@ export function StudyWorkspace({ id }: { id: string }) {
         <Badge variant="secondary">{doc.kind.toUpperCase()}</Badge>
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <Tabs value={tab} onValueChange={setTab} className="min-w-0 gap-4">
           <TabsList className="h-auto w-full flex-wrap justify-start sm:w-fit">
             <TabsTrigger value="listen">Listen</TabsTrigger>

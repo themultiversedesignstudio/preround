@@ -65,7 +65,7 @@ export function LectureAssistant({
     <>
       {open ? null : (
         <Button
-          className="fixed right-4 bottom-4 z-30 shadow-md xl:hidden"
+          className="fixed right-4 bottom-4 z-30 shadow-md lg:hidden"
           onClick={() => setOpen(true)}
         >
           <MessageSquare />
@@ -77,7 +77,7 @@ export function LectureAssistant({
         <button
           type="button"
           aria-label="Close lecture assistant"
-          className="fixed inset-0 z-40 bg-black/20 xl:hidden"
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
           onClick={() => setOpen(false)}
         />
       ) : null}
@@ -85,10 +85,10 @@ export function LectureAssistant({
       <aside
         className={cn(
           "flex-col overflow-hidden rounded-xl border bg-card shadow-sm ring-1 ring-foreground/10",
-          "xl:sticky xl:top-6 xl:flex xl:h-[calc(100dvh-3rem)]",
+          "lg:sticky lg:top-6 lg:flex lg:h-[calc(100dvh-9rem)]",
           open
-            ? "max-xl:fixed max-xl:inset-y-0 max-xl:right-0 max-xl:z-50 max-xl:flex max-xl:w-full max-xl:max-w-sm max-xl:rounded-none max-xl:border-y-0 max-xl:border-r-0 max-xl:shadow-xl"
-            : "max-xl:hidden"
+            ? "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:flex max-lg:w-full max-lg:max-w-sm max-lg:rounded-none max-lg:border-y-0 max-lg:border-r-0 max-lg:shadow-xl"
+            : "max-lg:hidden"
         )}
       >
         <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
@@ -101,7 +101,7 @@ export function LectureAssistant({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="xl:hidden"
+            className="lg:hidden"
             onClick={() => setOpen(false)}
           >
             <X />
