@@ -20,12 +20,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  answerFromSlides,
-  buildFlashcards,
-  buildQuestions,
-} from "@/lib/generate-study"
+import { LectureAssistant } from "@/components/lecture-assistant"
+import { buildFlashcards, buildQuestions } from "@/lib/generate-study"
 import { canSpeak, startReading, stopSpeaking } from "@/lib/speech"
 import { isSampleLectureId, sampleWoundHealingLecture } from "@/lib/sample-lecture"
 import { loadDocs, upsertDoc, useDocs } from "@/lib/storage"
@@ -83,7 +79,7 @@ export function StudyWorkspace({ id }: { id: string }) {
   const slide = doc.slides[slideIndex] ?? doc.slides[0]
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <Button
@@ -105,40 +101,46 @@ export function StudyWorkspace({ id }: { id: string }) {
         <Badge variant="secondary">{doc.kind.toUpperCase()}</Badge>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="gap-4">
-        <TabsList className="h-auto w-full flex-wrap justify-start sm:w-fit">
-          <TabsTrigger value="listen">Listen</TabsTrigger>
-          <TabsTrigger value="slides">Slides</TabsTrigger>
-          <TabsTrigger value="quiz">Questions</TabsTrigger>
-          <TabsTrigger value="cards">Flashcards</TabsTrigger>
-          <TabsTrigger value="ask">Ask the lecture</TabsTrigger>
-        </TabsList>
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <Tabs value={tab} onValueChange={setTab} className="min-w-0 gap-4">
+          <TabsList className="h-auto w-full flex-wrap justify-start sm:w-fit">
+            <TabsTrigger value="listen">Listen</TabsTrigger>
+            <TabsTrigger value="slides">Slides</TabsTrigger>
+            <TabsTrigger value="quiz">Questions</TabsTrigger>
+            <TabsTrigger value="cards">Flashcards</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="listen">
-          <ListenPanel
-            doc={doc}
-            slideIndex={slideIndex}
-            onSlideIndex={setSlideIndex}
-          />
-        </TabsContent>
-        <TabsContent value="slides">
-          <SlidesPanel
-            doc={doc}
-            slideIndex={slideIndex}
-            onSlideIndex={setSlideIndex}
-            slide={slide}
-          />
-        </TabsContent>
-        <TabsContent value="quiz">
-          <QuizPanel doc={doc} />
-        </TabsContent>
-        <TabsContent value="cards">
-          <FlashPanel doc={doc} />
-        </TabsContent>
-        <TabsContent value="ask">
-          <AskPanel doc={doc} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="listen">
+            <ListenPanel
+              doc={doc}
+              slideIndex={slideIndex}
+              onSlideIndex={setSlideIndex}
+            />
+          </TabsContent>
+          <TabsContent value="slides">
+            <SlidesPanel
+              doc={doc}
+              slideIndex={slideIndex}
+              onSlideIndex={setSlideIndex}
+              slide={slide}
+            />
+          </TabsContent>
+          <TabsContent value="quiz">
+            <QuizPanel doc={doc} />
+          </TabsContent>
+          <TabsContent value="cards">
+            <FlashPanel doc={doc} />
+          </TabsContent>
+        </Tabs>
+        <LectureAssistant
+          doc={doc}
+          onOpenSlide={(source) => {
+            const next = doc.slides.findIndex((item) => item.index === source.index)
+            if (next >= 0) setSlideIndex(next)
+            setTab("slides")
+          }}
+        />
+      </div>
     </div>
   )
 }
@@ -546,76 +548,3 @@ function FlashPanel({ doc }: { doc: StudyDoc }) {
   )
 }
 
-function AskPanel({ doc }: { doc: StudyDoc }) {
-  const [question, setQuestion] = useState("")
-  const [thread, setThread] = useState<
-    { role: "you" | "preRound"; text: string }[]
-  >([])
-
-  const suggestions = [
-    "What are the three phases of wound healing?",
-    "When do you choose a flap instead of a graft?",
-    "What does a congested flap look like?",
-  ]
-
-  function ask(text: string) {
-    const q = text.trim()
-    if (!q) return
-    const result = answerFromSlides(doc.slides, q)
-    setThread((rows) => [
-      ...rows,
-      { role: "you", text: q },
-      { role: "preRound", text: result.answer },
-    ])
-    setQuestion("")
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Ask using only this lecture</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          {suggestions.map((item) => (
-            <Button key={item} variant="outline" size="sm" onClick={() => ask(item)}>
-              {item}
-            </Button>
-          ))}
-        </div>
-        <div className="space-y-3">
-          {thread.map((entry, index) => (
-            <div
-              key={`${entry.role}-${index}`}
-              className={`rounded-xl px-3 py-2 text-sm leading-6 whitespace-pre-wrap ${
-                entry.role === "you" ? "bg-primary/10" : "bg-muted"
-              }`}
-            >
-              <p className="mb-1 text-xs font-medium tracking-wide uppercase">
-                {entry.role === "you" ? "You" : "PreRound"}
-              </p>
-              {entry.text}
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Textarea
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Ask something that is actually on these slides…"
-            className="min-h-16"
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault()
-                ask(question)
-              }
-            }}
-          />
-          <Button className="sm:self-end" onClick={() => ask(question)}>
-            Ask
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
