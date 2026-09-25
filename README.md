@@ -26,6 +26,3 @@ npm run dev
 
 Open [http://127.0.0.1:43173](http://127.0.0.1:43173).
 
-## Try it without a file
-
-Use **Try a sample lecture** on the home page. That loads a short wound-healing deck used in reconstructive surgery teaching.

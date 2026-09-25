@@ -63,10 +63,17 @@ export function startReading(
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.rate = rate
     utterance.onerror = () => {}
-    window.setTimeout(() => {
-      if (stopped || !canSpeak()) return
+    let started = false
+    const speak = () => {
+      if (started || stopped || !canSpeak()) return
+      const voice = maleVoice()
+      if (!voice && window.speechSynthesis.getVoices().length === 0) return
+      started = true
+      if (voice) utterance.voice = voice
       window.speechSynthesis.speak(utterance)
-    }, 60)
+    }
+    window.speechSynthesis.addEventListener("voiceschanged", speak, { once: true })
+    window.setTimeout(speak, 60)
   }
 
   return () => {
@@ -74,6 +81,16 @@ export function startReading(
     if (timer !== undefined) window.clearTimeout(timer)
     stopSpeaking()
   }
+}
+
+function maleVoice() {
+  const voices = window.speechSynthesis.getVoices()
+  const female = /female|samantha|victoria|zira|karen|moira|fiona|susan|linda|kate|serena/i
+  const male = /male|daniel|david|alex|fred|rishi|arthur|aaron|gordon|ralph/i
+  return (
+    voices.find((voice) => male.test(voice.name) && !female.test(voice.name)) ??
+    voices.find((voice) => voice.lang.toLowerCase().startsWith("en") && !female.test(voice.name))
+  )
 }
 
 export function stopSpeaking() {

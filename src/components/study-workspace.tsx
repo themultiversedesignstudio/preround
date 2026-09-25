@@ -17,15 +17,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LectureAssistant } from "@/components/lecture-assistant"
 import { buildFlashcards, buildQuestions } from "@/lib/generate-study"
 import { canSpeak, startReading, stopSpeaking } from "@/lib/speech"
-import { isSampleLectureId, sampleWoundHealingLecture } from "@/lib/sample-lecture"
-import { deleteDoc, loadDocs, upsertDoc, useDocs } from "@/lib/storage"
+import { deleteDoc, upsertDoc, useDocs } from "@/lib/storage"
 import type { StudyDoc } from "@/lib/types"
 import { cn } from "cn"
 
@@ -37,23 +35,11 @@ export function StudyWorkspace({ id }: { id: string }) {
     () => true,
     () => false
   )
-  const builtIn = isSampleLectureId(id) ? sampleWoundHealingLecture() : null
-  const doc =
-    docs.find((item) => item.id === id) ??
-    docs.find((item) => item.id === builtIn?.id) ??
-    builtIn
+  const doc = docs.find((item) => item.id === id)
   const [slideIndex, setSlideIndex] = useState(0)
   const [tab, setTab] = useState("listen")
 
   useEffect(() => () => stopSpeaking(), [])
-
-  useEffect(() => {
-    if (!hydrated || !isSampleLectureId(id)) return
-    const sample = sampleWoundHealingLecture()
-    if (!loadDocs().some((item) => item.id === sample.id)) {
-      upsertDoc(sample)
-    }
-  }, [hydrated, id])
 
   if (!hydrated) {
     return (
@@ -130,8 +116,6 @@ export function StudyWorkspace({ id }: { id: string }) {
             <ListenPanel
               doc={doc}
               slideIndex={slideIndex}
-              onSlideIndex={setSlideIndex}
-              onDeleteSlide={removeSlide}
             />
           </TabsContent>
           <TabsContent value="slides">
@@ -167,12 +151,10 @@ function ListenPanel({
   doc,
   slideIndex,
   onSlideIndex,
-  onDeleteSlide,
 }: {
   doc: StudyDoc
   slideIndex: number
   onSlideIndex: (index: number) => void
-  onDeleteSlide: (index: number) => void
 }) {
   const [playing, setPlaying] = useState(false)
   const [mode, setMode] = useState<"slide" | "all">("slide")
@@ -219,8 +201,7 @@ function ListenPanel({
   useEffect(() => () => stopRef.current?.(), [])
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <Card>
+    <Card>
         <CardHeader className="flex-row items-start justify-between gap-3">
           <div>
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -299,48 +280,7 @@ function ListenPanel({
             </p>
           ) : null}
         </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Deck</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-80">
-            <div className="flex flex-col gap-1 pr-3">
-              {doc.slides.map((item, index) => (
-                <div key={item.index} className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      halt()
-                      onSlideIndex(index)
-                    }}
-                    className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                      index === slideIndex
-                        ? "bg-primary/12 text-foreground"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    <span className="font-medium">{item.index}. {item.title}</span>
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Delete slide ${item.index}`}
-                    onClick={() => {
-                      halt()
-                      onDeleteSlide(index)
-                    }}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+    </Card>
   )
 }
 

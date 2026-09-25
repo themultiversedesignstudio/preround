@@ -5,7 +5,6 @@ import { MessageSquare, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { isSampleLectureId } from "@/lib/sample-lecture"
 import type { Slide, StudyDoc } from "@/lib/types"
 import { cn } from "cn"
 
@@ -15,14 +14,7 @@ type Turn = {
   sources?: Slide[]
 }
 
-const SAMPLE_PROMPTS = [
-  "What are the three phases of wound healing?",
-  "When do you choose a flap instead of a graft?",
-  "What does a congested flap look like?",
-]
-
 function promptsFor(doc: StudyDoc) {
-  if (isSampleLectureId(doc.id)) return SAMPLE_PROMPTS
   return doc.slides.slice(0, 3).map((slide) => `Explain “${slide.title}”`)
 }
 

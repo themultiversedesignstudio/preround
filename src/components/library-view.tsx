@@ -4,13 +4,7 @@ import { useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import {
-  Ear,
-  FileUp,
-  LoaderCircle,
-  NotebookPen,
-  Trash2,
-} from "lucide-react"
+import { FileUp, LoaderCircle, NotebookPen, Trash2 } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -31,7 +25,6 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { detectKind, parsePastedNotes, parseStudyFile } from "@/lib/parse-file"
-import { SAMPLE_LECTURE_ID, sampleWoundHealingLecture } from "@/lib/sample-lecture"
 import { deleteDoc, upsertDoc, useDocs } from "@/lib/storage"
 import type { StudyDoc } from "@/lib/types"
 import { cn } from "cn"
@@ -59,9 +52,7 @@ export function LibraryView() {
   const [pasteText, setPasteText] = useState("")
   const [dragOver, setDragOver] = useState(false)
 
-  const imported = docs.filter((doc) => doc.id !== SAMPLE_LECTURE_ID)
-  const empty = imported.length === 0
-  const sample = sampleWoundHealingLecture()
+  const empty = docs.length === 0
 
   async function ingestMany(files: File[]) {
     if (!files.length) return
@@ -107,11 +98,6 @@ export function LibraryView() {
     } finally {
       setBusy(false)
     }
-  }
-
-  function openSample() {
-    upsertDoc(sampleWoundHealingLecture())
-    router.push(`/study/${SAMPLE_LECTURE_ID}`)
   }
 
   function savePaste() {
@@ -164,14 +150,6 @@ export function LibraryView() {
             <NotebookPen className="size-4" />
             Paste notes
           </button>
-          <button
-            type="button"
-            className={cn(buttonVariants({ variant: "outline" }))}
-            onClick={openSample}
-          >
-            <Ear className="size-4" />
-            Try a sample lecture
-          </button>
         </div>
       </header>
 
@@ -222,41 +200,9 @@ export function LibraryView() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-heading text-xl">Sample lecture</h2>
-          <p className="text-sm text-muted-foreground">Always available</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <CardTitle>{sample.name}</CardTitle>
-                <CardDescription>
-                  Built-in reconstructive surgery deck
-                </CardDescription>
-              </div>
-              <Badge variant="secondary">SAMPLE</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {sample.slides.length} slides
-            </p>
-            <button
-              type="button"
-              className={cn(buttonVariants())}
-              onClick={openSample}
-            >
-              Study
-            </button>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
           <h2 className="font-heading text-xl">Your lectures</h2>
           <p className="text-sm text-muted-foreground">
-            {imported.length ? `${imported.length} imported` : "None yet"}
+            {docs.length ? `${docs.length} imported` : "None yet"}
           </p>
         </div>
 
@@ -265,14 +211,13 @@ export function LibraryView() {
             <CardHeader>
               <CardTitle>Empty bag</CardTitle>
               <CardDescription>
-                Import tonight&apos;s slides, or open the sample lecture above
-                to hear Çalış Kız read a deck and generate questions.
+                Import a lecture. You can delete it later with the trash icon.
               </CardDescription>
             </CardHeader>
           </Card>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {imported.map((doc) => (
+            {docs.map((doc) => (
               <Card key={doc.id} className="relative">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
