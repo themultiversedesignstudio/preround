@@ -150,11 +150,9 @@ export function StudyWorkspace({ id }: { id: string }) {
 function ListenPanel({
   doc,
   slideIndex,
-  onSlideIndex,
 }: {
   doc: StudyDoc
   slideIndex: number
-  onSlideIndex: (index: number) => void
 }) {
   const [playing, setPlaying] = useState(false)
   const [mode, setMode] = useState<"slide" | "all">("slide")
