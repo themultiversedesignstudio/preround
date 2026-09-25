@@ -9,6 +9,7 @@ import {
   Pause,
   Play,
   RotateCcw,
+  Trash2,
   Volume2,
 } from "lucide-react"
 
@@ -24,7 +25,7 @@ import { LectureAssistant } from "@/components/lecture-assistant"
 import { buildFlashcards, buildQuestions } from "@/lib/generate-study"
 import { canSpeak, startReading, stopSpeaking } from "@/lib/speech"
 import { isSampleLectureId, sampleWoundHealingLecture } from "@/lib/sample-lecture"
-import { loadDocs, upsertDoc, useDocs } from "@/lib/storage"
+import { deleteDoc, loadDocs, upsertDoc, useDocs } from "@/lib/storage"
 import type { StudyDoc } from "@/lib/types"
 import { cn } from "cn"
 
@@ -78,6 +79,20 @@ export function StudyWorkspace({ id }: { id: string }) {
 
   const slide = doc.slides[slideIndex] ?? doc.slides[0]
 
+  function removeSlide(index: number) {
+    stopSpeaking()
+    const nextSlides = doc.slides
+      .filter((_, itemIndex) => itemIndex !== index)
+      .map((item, itemIndex) => ({ ...item, index: itemIndex + 1 }))
+    if (!nextSlides.length) {
+      deleteDoc(doc.id)
+      router.push("/")
+      return
+    }
+    upsertDoc({ ...doc, slides: nextSlides })
+    setSlideIndex((current) => Math.min(current === index ? index : current > index ? current - 1 : current, nextSlides.length - 1))
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -95,7 +110,7 @@ export function StudyWorkspace({ id }: { id: string }) {
           </Button>
           <h1 className="font-heading text-3xl tracking-tight">{doc.name}</h1>
           <p className="text-sm text-muted-foreground">
-            {doc.slides.length} slides imported · text stays on this device
+            🐣 Çalış Kız · {doc.slides.length} slides · only on this device
           </p>
         </div>
         <Badge variant="secondary">{doc.kind.toUpperCase()}</Badge>
@@ -115,6 +130,7 @@ export function StudyWorkspace({ id }: { id: string }) {
               doc={doc}
               slideIndex={slideIndex}
               onSlideIndex={setSlideIndex}
+              onDeleteSlide={removeSlide}
             />
           </TabsContent>
           <TabsContent value="slides">
@@ -123,7 +139,8 @@ export function StudyWorkspace({ id }: { id: string }) {
               slideIndex={slideIndex}
               onSlideIndex={setSlideIndex}
               slide={slide}
-            />
+              onDeleteSlide={() => removeSlide(slideIndex)}
+          />
           </TabsContent>
           <TabsContent value="quiz">
             <QuizPanel doc={doc} />
@@ -149,10 +166,12 @@ function ListenPanel({
   doc,
   slideIndex,
   onSlideIndex,
+  onDeleteSlide,
 }: {
   doc: StudyDoc
   slideIndex: number
   onSlideIndex: (index: number) => void
+  onDeleteSlide: (index: number) => void
 }) {
   const [playing, setPlaying] = useState(false)
   const [mode, setMode] = useState<"slide" | "all">("slide")
@@ -288,21 +307,33 @@ function ListenPanel({
           <ScrollArea className="h-80">
             <div className="flex flex-col gap-1 pr-3">
               {doc.slides.map((item, index) => (
-                <button
-                  key={item.index}
-                  type="button"
-                  onClick={() => {
-                    halt()
-                    onSlideIndex(index)
-                  }}
-                  className={`rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                    index === slideIndex
-                      ? "bg-primary/12 text-foreground"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  <span className="font-medium">{item.index}. {item.title}</span>
-                </button>
+                <div key={item.index} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      halt()
+                      onSlideIndex(index)
+                    }}
+                    className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                      index === slideIndex
+                        ? "bg-primary/12 text-foreground"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <span className="font-medium">{item.index}. {item.title}</span>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Delete slide ${item.index}`}
+                    onClick={() => {
+                      halt()
+                      onDeleteSlide(index)
+                    }}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
               ))}
             </div>
           </ScrollArea>
@@ -317,11 +348,13 @@ function SlidesPanel({
   slideIndex,
   onSlideIndex,
   slide,
+  onDeleteSlide,
 }: {
   doc: StudyDoc
   slideIndex: number
   onSlideIndex: (index: number) => void
   slide: StudyDoc["slides"][number]
+  onDeleteSlide: () => void
 }) {
   return (
     <Card>
@@ -330,6 +363,14 @@ function SlidesPanel({
           Slide {slide.index}: {slide.title}
         </CardTitle>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={`Delete slide ${slide.index}`}
+            onClick={onDeleteSlide}
+          >
+            <Trash2 />
+          </Button>
           <Button
             variant="outline"
             size="icon"

@@ -24,7 +24,13 @@ export function loadDocs(): StudyDoc[] {
 }
 
 export function saveDocs(docs: StudyDoc[]) {
-  localStorage.setItem(KEY, JSON.stringify(docs))
+  try {
+    localStorage.setItem(KEY, JSON.stringify(docs))
+  } catch {
+    throw new Error(
+      "This browser is full. Delete a lecture or some slides, then try again."
+    )
+  }
   notify()
 }
 
