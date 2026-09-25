@@ -9,7 +9,6 @@ import {
   FileUp,
   LoaderCircle,
   NotebookPen,
-  Stethoscope,
   Trash2,
 } from "lucide-react"
 
@@ -64,33 +63,47 @@ export function LibraryView() {
   const empty = imported.length === 0
   const sample = sampleWoundHealingLecture()
 
-  async function ingest(file: File) {
+  async function ingestMany(files: File[]) {
+    if (!files.length) return
     setBusy(true)
+    const saved: StudyDoc[] = []
+    const skipped: string[] = []
     try {
-      const kind = detectKind(file)
-      if (!kind) {
-        toast.error("Use a PDF, .pptx, .txt, or .md file.")
+      for (const file of files) {
+        const kind = detectKind(file)
+        if (!kind) {
+          skipped.push(file.name)
+          continue
+        }
+        const slides = await parseStudyFile(file)
+        if (!slides.length) {
+          skipped.push(file.name)
+          continue
+        }
+        const doc: StudyDoc = {
+          id: crypto.randomUUID(),
+          name: file.name.replace(/\.(pdf|pptx|txt|md)$/i, ""),
+          kind,
+          createdAt: new Date().toISOString(),
+          slides,
+        }
+        upsertDoc(doc)
+        saved.push(doc)
+      }
+      if (!saved.length) {
+        toast.error("No readable PDF, PowerPoint, or text files in that selection.")
         return
       }
-      const slides = await parseStudyFile(file)
-      if (!slides.length) {
-        toast.error(
-          "No readable text in that file. Export a text-based PDF, or paste the notes instead."
-        )
-        return
+      const count = saved.reduce((sum, doc) => sum + doc.slides.length, 0)
+      toast.success(
+        `Imported ${saved.length} ${saved.length === 1 ? "document" : "documents"} · ${count} slides`
+      )
+      if (skipped.length) {
+        toast.error(`Skipped ${skipped.length} files with no readable text.`)
       }
-      const doc: StudyDoc = {
-        id: crypto.randomUUID(),
-        name: file.name.replace(/\.(pdf|pptx|txt|md)$/i, ""),
-        kind,
-        createdAt: new Date().toISOString(),
-        slides,
-      }
-      upsertDoc(doc)
-      toast.success(`Imported ${slides.length} slides from ${file.name}`)
-      router.push(`/study/${doc.id}`)
+      if (saved.length === 1) router.push(`/study/${saved[0].id}`)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not read that file.")
+      toast.error(error instanceof Error ? error.message : "Could not read those files.")
     } finally {
       setBusy(false)
     }
@@ -124,7 +137,7 @@ export function LibraryView() {
     () =>
       busy
         ? "Reading slides…"
-        : "Drop a lecture PDF or PowerPoint, or paste your notes.",
+        : "Drop as many lectures as you need, or paste your notes.",
     [busy]
   )
 
@@ -133,8 +146,10 @@ export function LibraryView() {
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-xl space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-primary">
-            <Stethoscope className="size-4" />
-            PreRound
+            <span aria-hidden="true" className="text-lg leading-none">
+              🐣
+            </span>
+            Çalış Kız
           </div>
           <h1 className="font-heading text-4xl leading-tight tracking-tight text-foreground sm:text-5xl">
             Import the lecture. Hear it. Get grilled on it.
@@ -171,8 +186,7 @@ export function LibraryView() {
         onDrop={(event) => {
           event.preventDefault()
           setDragOver(false)
-          const file = event.dataTransfer.files[0]
-          if (file) void ingest(file)
+          void ingestMany([...event.dataTransfer.files])
         }}
         disabled={busy}
         className={`flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 py-10 text-center transition-colors ${
@@ -189,18 +203,18 @@ export function LibraryView() {
         <div className="space-y-1">
           <p className="text-base font-medium">{hint}</p>
           <p className="text-sm text-muted-foreground">
-            PDF, PowerPoint (.pptx), Markdown, or plain text. Image-only scans
-            need pasted notes.
+            PDF, PowerPoint (.pptx), Markdown, or plain text. Add as many as you
+            need. They stay in this browser only.
           </p>
         </div>
         <input
           ref={inputRef}
           type="file"
           accept=".pdf,.pptx,.txt,.md,application/pdf"
+          multiple
           className="hidden"
           onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) void ingest(file)
+            void ingestMany([...(event.target.files ?? [])])
             event.target.value = ""
           }}
         />
@@ -252,7 +266,7 @@ export function LibraryView() {
               <CardTitle>Empty bag</CardTitle>
               <CardDescription>
                 Import tonight&apos;s slides, or open the sample lecture above
-                to hear PreRound read a deck and generate questions.
+                to hear Çalış Kız read a deck and generate questions.
               </CardDescription>
             </CardHeader>
           </Card>

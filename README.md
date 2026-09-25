@@ -1,4 +1,4 @@
-# PreRound
+# Çalış Kız
 
 A study companion for medicine. Import lecture slides, hear them read aloud, then quiz yourself from the same notes.
 

@@ -20,7 +20,7 @@ const newsreader = Newsreader({
 })
 
 export const metadata: Metadata = {
-  title: "PreRound — study medicine from your slides",
+  title: "Çalış Kız — study medicine from your slides",
   description:
     "Import lecture PDFs and PowerPoint decks, hear them read aloud, and quiz yourself from the same notes.",
 }
