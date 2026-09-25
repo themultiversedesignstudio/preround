@@ -5,13 +5,12 @@ import { MessageSquare, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { answerFromSlides } from "@/lib/generate-study"
 import { isSampleLectureId } from "@/lib/sample-lecture"
 import type { Slide, StudyDoc } from "@/lib/types"
 import { cn } from "cn"
 
 type Turn = {
-  role: "you" | "preRound"
+  role: "you" | "tonton"
   text: string
   sources?: Slide[]
 }
@@ -37,23 +36,51 @@ export function LectureAssistant({
   const [open, setOpen] = useState(false)
   const [question, setQuestion] = useState("")
   const [thread, setThread] = useState<Turn[]>([])
+  const [busy, setBusy] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const prompts = promptsFor(doc)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" })
-  }, [thread])
+  }, [thread, busy])
 
-  function ask(text: string) {
+  async function ask(text: string) {
     const q = text.trim()
-    if (!q) return
-    const result = answerFromSlides(doc.slides, q)
-    setThread((rows) => [
-      ...rows,
-      { role: "you", text: q },
-      { role: "preRound", text: result.answer, sources: result.sources },
-    ])
+    if (!q || busy) return
     setQuestion("")
+    setBusy(true)
+    setThread((rows) => [...rows, { role: "you", text: q }])
+    try {
+      const response = await fetch("/api/tonton", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: q,
+          slides: doc.slides,
+          history: thread.slice(-8),
+        }),
+      })
+      const data = (await response.json()) as {
+        answer?: string
+        sources?: Slide[]
+        error?: string
+      }
+      setThread((rows) => [
+        ...rows,
+        {
+          role: "tonton",
+          text: data.answer || data.error || "TonTon could not answer that.",
+          sources: data.sources,
+        },
+      ])
+    } catch {
+      setThread((rows) => [
+        ...rows,
+        { role: "tonton", text: "TonTon could not reach ChatGPT." },
+      ])
+    } finally {
+      setBusy(false)
+    }
   }
 
   function openSource(slide: Slide) {
@@ -69,14 +96,14 @@ export function LectureAssistant({
           onClick={() => setOpen(true)}
         >
           <MessageSquare />
-          Ask
+          TonTon
         </Button>
       )}
 
       {open ? (
         <button
           type="button"
-          aria-label="Close lecture assistant"
+          aria-label="Close TonTon"
           className="fixed inset-0 z-40 bg-black/20 lg:hidden"
           onClick={() => setOpen(false)}
         />
@@ -93,9 +120,9 @@ export function LectureAssistant({
       >
         <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
           <div>
-            <p className="font-heading text-lg leading-none">Ask this lecture</p>
+            <p className="font-heading text-lg leading-none">TonTon</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Answers are quoted from these slides.
+              ChatGPT answers from this lecture.
             </p>
           </div>
           <Button
@@ -126,8 +153,8 @@ export function LectureAssistant({
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
           {thread.length === 0 ? (
             <p className="text-sm leading-6 text-muted-foreground">
-              Ask about a term that appears in this deck. PreRound will not
-              invent an answer from outside the lecture.
+              Ask TonTon about this deck. Your question and the slide text are
+              sent to ChatGPT.
             </p>
           ) : null}
           {thread.map((entry, index) => (
@@ -139,7 +166,7 @@ export function LectureAssistant({
               )}
             >
               <p className="mb-1 text-xs font-medium tracking-wide uppercase">
-                {entry.role === "you" ? "You" : "PreRound"}
+                {entry.role === "you" ? "You" : "TonTon"}
               </p>
               {entry.text}
               {entry.sources?.length ? (
@@ -158,6 +185,9 @@ export function LectureAssistant({
               ) : null}
             </div>
           ))}
+          {busy ? (
+            <p className="text-sm text-muted-foreground">TonTon is reading the slides…</p>
+          ) : null}
           <div ref={endRef} />
         </div>
 
@@ -171,7 +201,8 @@ export function LectureAssistant({
           <Textarea
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Ask something that is on these slides…"
+            placeholder="Ask TonTon about these slides…"
+            disabled={busy}
             className="min-h-16"
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
@@ -180,8 +211,8 @@ export function LectureAssistant({
               }
             }}
           />
-          <Button type="submit" className="self-end">
-            Ask
+          <Button type="submit" className="self-end" disabled={busy}>
+            Ask TonTon
           </Button>
         </form>
       </aside>

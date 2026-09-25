@@ -2,7 +2,7 @@
 
 A study companion for medicine. Import lecture slides, hear them read aloud, then quiz yourself from the same notes.
 
-Files never leave the browser. There is no account and no server-side AI key required.
+Imported files stay in this browser until you ask TonTon. That question, and the slide text needed to answer it, are sent to ChatGPT.
 
 ## What it does
 
@@ -11,7 +11,9 @@ Files never leave the browser. There is no account and no server-side AI key req
 - Read a slide or the rest of the deck with the browser speech engine
 - Build multiple-choice, fill-in-the-blank, and true/false questions from the text
 - Flip flashcards
-- Ask questions that are answered only from the imported lecture
+- Ask TonTon, who answers from the imported lecture through ChatGPT
+
+TonTon needs an `OPENAI_API_KEY` on the server. In Vercel, open the `preroundz` project, add that environment variable, and redeploy. Optional: set `OPENAI_MODEL` (the default is `gpt-4.1-mini`).
 
 Image-only scans have no text to extract. Paste the notes instead, or export a text-based PDF.
 
