@@ -77,19 +77,20 @@ export function StudyWorkspace({ id }: { id: string }) {
     )
   }
 
-  const slide = doc.slides[slideIndex] ?? doc.slides[0]
+  const lecture = doc
+  const slide = lecture.slides[slideIndex] ?? lecture.slides[0]
 
   function removeSlide(index: number) {
     stopSpeaking()
-    const nextSlides = doc.slides
+    const nextSlides = lecture.slides
       .filter((_, itemIndex) => itemIndex !== index)
       .map((item, itemIndex) => ({ ...item, index: itemIndex + 1 }))
     if (!nextSlides.length) {
-      deleteDoc(doc.id)
+      deleteDoc(lecture.id)
       router.push("/")
       return
     }
-    upsertDoc({ ...doc, slides: nextSlides })
+    upsertDoc({ ...lecture, slides: nextSlides })
     setSlideIndex((current) => Math.min(current === index ? index : current > index ? current - 1 : current, nextSlides.length - 1))
   }
 
