@@ -6,28 +6,39 @@ import { useRouter } from "next/navigation"
 import {
   ChevronLeft,
   ChevronRight,
+  CircleQuestionMark,
+  House,
+  Layers,
   Pause,
   Play,
+  Presentation,
   RotateCcw,
   Trash2,
   Volume2,
 } from "lucide-react"
 
+import { AppShell } from "@/components/app-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LectureAssistant } from "@/components/lecture-assistant"
 import { buildFlashcards, buildQuestions } from "@/lib/generate-study"
 import { canSpeak, startReading, stopSpeaking } from "@/lib/speech"
-import { isSampleLectureId, sampleWoundHealingLecture } from "@/lib/sample-lecture"
-import { deleteDoc, loadDocs, upsertDoc, useDocs } from "@/lib/storage"
+import { deleteDoc, upsertDoc, useDocs } from "@/lib/storage"
 import type { StudyDoc } from "@/lib/types"
 import { cn } from "cn"
+
+const SECTIONS = [
+  { id: "listen", label: "Listen", icon: Volume2 },
+  { id: "slides", label: "Slides", icon: Presentation },
+  { id: "quiz", label: "Questions", icon: CircleQuestionMark },
+  { id: "cards", label: "Flashcards", icon: Layers },
+] as const
+
+type SectionId = (typeof SECTIONS)[number]["id"]
 
 export function StudyWorkspace({ id }: { id: string }) {
   const router = useRouter()
@@ -37,43 +48,33 @@ export function StudyWorkspace({ id }: { id: string }) {
     () => true,
     () => false
   )
-  const builtIn = isSampleLectureId(id) ? sampleWoundHealingLecture() : null
-  const doc =
-    docs.find((item) => item.id === id) ??
-    docs.find((item) => item.id === builtIn?.id) ??
-    builtIn
+  const doc = docs.find((item) => item.id === id) ?? null
   const [slideIndex, setSlideIndex] = useState(0)
-  const [tab, setTab] = useState("listen")
+  const [tab, setTab] = useState<SectionId>("listen")
 
   useEffect(() => () => stopSpeaking(), [])
 
-  useEffect(() => {
-    if (!hydrated || !isSampleLectureId(id)) return
-    const sample = sampleWoundHealingLecture()
-    if (!loadDocs().some((item) => item.id === sample.id)) {
-      upsertDoc(sample)
-    }
-  }, [hydrated, id])
-
   if (!hydrated) {
     return (
-      <div className="flex flex-1 items-center justify-center p-8 text-muted-foreground">
-        Opening lecture…
-      </div>
+      <AppShell title="Library" nav={[{ label: "Library", icon: House, href: "/", active: true }]}>
+        <p className="text-sm font-semibold text-muted-foreground">Opening lecture…</p>
+      </AppShell>
     )
   }
 
   if (!doc) {
     return (
-      <div className="mx-auto flex max-w-lg flex-col gap-3 p-8">
-        <h1 className="font-heading text-2xl">Lecture not in this browser</h1>
-        <p className="text-muted-foreground">
-          PreRound stores decks locally. Import the file again on this device.
-        </p>
-        <Link href="/" className={cn(buttonVariants())}>
-          Back to library
-        </Link>
-      </div>
+      <AppShell title="Library" nav={[{ label: "Library", icon: House, href: "/", active: true }]}>
+        <div className="max-w-lg space-y-3 rounded-[24px] bg-[#fbfaff] p-6 ring-1 ring-black/5">
+          <h2 className="text-2xl font-extrabold tracking-tight">This lecture is not on this device</h2>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Çalış Kız keeps each lecture in the browser that imported it. Import the file again here.
+          </p>
+          <Link href="/" className={cn(buttonVariants(), "rounded-full")}>
+            Back to library
+          </Link>
+        </div>
+      </AppShell>
     )
   }
 
@@ -91,75 +92,98 @@ export function StudyWorkspace({ id }: { id: string }) {
       return
     }
     upsertDoc({ ...lecture, slides: nextSlides })
-    setSlideIndex((current) => Math.min(current === index ? index : current > index ? current - 1 : current, nextSlides.length - 1))
+    setSlideIndex((current) =>
+      Math.min(
+        current === index ? index : current > index ? current - 1 : current,
+        nextSlides.length - 1
+      )
+    )
+  }
+
+  function openSection(next: SectionId) {
+    if (next !== "listen") stopSpeaking()
+    setTab(next)
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-fit px-0 hover:bg-transparent"
+    <AppShell
+      title={lecture.name}
+      dockRight
+      nav={[
+        {
+          label: "Library",
+          icon: House,
+          href: "/",
+          onClick: () => stopSpeaking(),
+        },
+        ...SECTIONS.map((section) => ({
+          label: section.label,
+          icon: section.icon,
+          active: tab === section.id,
+          onClick: () => openSection(section.id),
+        })),
+      ]}
+      footer={
+        <div className="rounded-[24px] bg-[#f3eefe] p-4">
+          <p className="text-sm font-extrabold text-[#241c36]">On this device</p>
+          <p className="mt-1 text-xs leading-5 text-[#6d6780]">
+            {lecture.slides.length} slides stay in this browser. Delete the lecture whenever you want.
+          </p>
+          <button
+            type="button"
+            className="mt-3 h-10 w-full rounded-xl bg-white text-sm font-bold text-[#241c36] ring-1 ring-black/5"
             onClick={() => {
               stopSpeaking()
+              deleteDoc(lecture.id)
               router.push("/")
             }}
           >
-            <ChevronLeft /> Library
-          </Button>
-          <h1 className="font-heading text-3xl tracking-tight">{doc.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            🐣 Çalış Kız · {doc.slides.length} slides · only on this device
-          </p>
+            Delete lecture
+          </button>
         </div>
-        <Badge variant="secondary">{doc.kind.toUpperCase()}</Badge>
-      </div>
-
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <Tabs value={tab} onValueChange={setTab} className="min-w-0 gap-4">
-          <TabsList className="h-auto w-full flex-wrap justify-start sm:w-fit">
-            <TabsTrigger value="listen">Listen</TabsTrigger>
-            <TabsTrigger value="slides">Slides</TabsTrigger>
-            <TabsTrigger value="quiz">Questions</TabsTrigger>
-            <TabsTrigger value="cards">Flashcards</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="listen">
-            <ListenPanel
-              doc={doc}
-              slideIndex={slideIndex}
-              onSlideIndex={setSlideIndex}
-              onDeleteSlide={removeSlide}
-            />
-          </TabsContent>
-          <TabsContent value="slides">
-            <SlidesPanel
-              doc={doc}
-              slideIndex={slideIndex}
-              onSlideIndex={setSlideIndex}
-              slide={slide}
-              onDeleteSlide={() => removeSlide(slideIndex)}
-          />
-          </TabsContent>
-          <TabsContent value="quiz">
-            <QuizPanel doc={doc} />
-          </TabsContent>
-          <TabsContent value="cards">
-            <FlashPanel doc={doc} />
-          </TabsContent>
-        </Tabs>
+      }
+      right={
         <LectureAssistant
-          doc={doc}
+          doc={lecture}
           onOpenSlide={(source) => {
-            const next = doc.slides.findIndex((item) => item.index === source.index)
+            const next = lecture.slides.findIndex((item) => item.index === source.index)
             if (next >= 0) setSlideIndex(next)
-            setTab("slides")
+            openSection("slides")
           }}
         />
+      }
+    >
+      <div className="mb-4 flex gap-2 overflow-x-auto md:hidden">
+        {SECTIONS.map((section) => (
+          <button
+            key={section.id}
+            type="button"
+            onClick={() => openSection(section.id)}
+            className={cn(
+              "shrink-0 rounded-full px-3 py-1.5 text-sm font-bold",
+              tab === section.id ? "bg-[#efe8ff] text-[#2a2340]" : "bg-[#f4f1fb] text-[#6d6780]"
+            )}
+          >
+            {section.label}
+          </button>
+        ))}
       </div>
-    </div>
+
+      {tab === "listen" ? (
+        <ListenPanel doc={lecture} slideIndex={slideIndex} onSlideIndex={setSlideIndex} />
+      ) : null}
+      {tab === "slides" && slide ? (
+        <SlidesPanel
+          doc={lecture}
+          slideIndex={slideIndex}
+          onSlideIndex={setSlideIndex}
+          slide={slide}
+          onDeleteSlide={() => removeSlide(slideIndex)}
+        />
+      ) : null}
+      {tab === "quiz" ? <QuizPanel doc={lecture} /> : null}
+      {tab === "cards" ? <FlashPanel doc={lecture} /> : null}
+    </AppShell>
   )
 }
 
@@ -167,19 +191,17 @@ function ListenPanel({
   doc,
   slideIndex,
   onSlideIndex,
-  onDeleteSlide,
 }: {
   doc: StudyDoc
   slideIndex: number
   onSlideIndex: (index: number) => void
-  onDeleteSlide: (index: number) => void
 }) {
   const [playing, setPlaying] = useState(false)
   const [mode, setMode] = useState<"slide" | "all">("slide")
   const [rate, setRate] = useState(1)
   const [cursor, setCursor] = useState("")
   const stopRef = useRef<(() => void) | null>(null)
-  const slide = doc.slides[slideIndex]
+  const slide = doc.slides[slideIndex] ?? doc.slides[0]
 
   function halt() {
     stopRef.current?.()
@@ -205,10 +227,12 @@ function ListenPanel({
   }
 
   function playCurrent() {
+    if (!slide) return
     playScript(slide.text, "slide")
   }
 
   function playAllFromHere() {
+    if (!slide) return
     const script = doc.slides
       .slice(slideIndex)
       .map((item) => `Slide ${item.index}. ${item.title}. ${item.text}`)
@@ -218,60 +242,116 @@ function ListenPanel({
 
   useEffect(() => () => stopRef.current?.(), [])
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+  if (!slide) {
+    return (
       <Card>
-        <CardHeader className="flex-row items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <CardContent className="py-8 text-muted-foreground">This lecture has no slides.</CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="rounded-[28px] ring-black/5">
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold tracking-wide text-[#8d87a0] uppercase">
               Slide {slide.index} of {doc.slides.length}
             </p>
-            <CardTitle className="mt-1">{slide.title}</CardTitle>
+            <CardTitle className="mt-1 text-xl">{slide.title}</CardTitle>
           </div>
-          <Volume2 className="size-5 text-primary" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-base leading-7">
-            {slide.text.split(/(?<=[.!?])\s+/).map((sentence) => (
-              <span
-                key={sentence}
-                className={
-                  cursor && sentence.startsWith(cursor.slice(0, 18))
-                    ? "rounded bg-primary/15"
-                    : undefined
-                }
-              >
-                {sentence}{" "}
-              </span>
-            ))}
-          </p>
-          <Separator />
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-2">
-              {playing ? (
-                <button type="button" className={cn(buttonVariants())} onClick={halt}>
-                  <Pause className="size-4" />
-                  Stop
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={cn(buttonVariants())}
-                  onClick={playCurrent}
-                >
-                  <Play className="size-4" />
-                  Read this slide
-                </button>
-              )}
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#efe8ff] text-primary">
+            <Volume2 className="size-5" />
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Progress value={(slide.index / doc.slides.length) * 100} />
+        <p className="text-base leading-7">
+          {slide.text.split(/(?<=[.!?])\s+/).map((sentence) => (
+            <span
+              key={sentence}
+              className={
+                cursor && sentence.startsWith(cursor.slice(0, 18))
+                  ? "rounded bg-primary/15"
+                  : undefined
+              }
+            >
+              {sentence}{" "}
+            </span>
+          ))}
+        </p>
+        <Separator />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              aria-label="Previous slide"
+              disabled={slideIndex === 0}
+              onClick={() => {
+                halt()
+                onSlideIndex(Math.max(0, slideIndex - 1))
+              }}
+            >
+              <ChevronLeft />
+            </Button>
+            {playing ? (
+              <button type="button" className={cn(buttonVariants(), "rounded-full")} onClick={halt}>
+                <Pause className="size-4" />
+                Stop
+              </button>
+            ) : (
               <button
                 type="button"
-                className={cn(buttonVariants({ variant: "outline" }))}
-                onClick={playAllFromHere}
+                className={cn(buttonVariants(), "rounded-full")}
+                onClick={playCurrent}
               >
-                Read from here
+                <Play className="size-4" />
+                Read this slide
               </button>
-            </div>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            )}
+            <button
+              type="button"
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-full")}
+              onClick={playAllFromHere}
+            >
+              Read from here
+            </button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              aria-label="Next slide"
+              disabled={slideIndex >= doc.slides.length - 1}
+              onClick={() => {
+                halt()
+                onSlideIndex(Math.min(doc.slides.length - 1, slideIndex + 1))
+              }}
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-[#6d6780]">
+              <span className="shrink-0">Jump</span>
+              <select
+                value={slideIndex}
+                className="h-9 min-w-0 flex-1 rounded-full border border-input bg-[#f6f4fa] px-3 text-sm font-semibold text-foreground outline-none"
+                onChange={(event) => {
+                  halt()
+                  onSlideIndex(Number(event.target.value))
+                }}
+              >
+                {doc.slides.map((item, index) => (
+                  <option key={item.index} value={index}>
+                    {item.index}. {item.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-center gap-3 text-sm font-semibold text-[#6d6780]">
               <span>Speed {rate.toFixed(1)}×</span>
               <Slider
                 className="w-32"
@@ -286,61 +366,21 @@ function ListenPanel({
               />
             </div>
           </div>
-          {playing ? (
-            <p className="text-sm text-muted-foreground">
-              {canSpeak()
-                ? "Reading this slide. Highlight follows each sentence."
-                : "Highlighting this slide. Chrome or Safari will also read it aloud."}
-            </p>
-          ) : null}
-          {mode === "all" && playing ? (
-            <p className="text-xs text-muted-foreground">
-              Reading the rest of the deck from slide {slide.index}.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Deck</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-80">
-            <div className="flex flex-col gap-1 pr-3">
-              {doc.slides.map((item, index) => (
-                <div key={item.index} className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      halt()
-                      onSlideIndex(index)
-                    }}
-                    className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                      index === slideIndex
-                        ? "bg-primary/12 text-foreground"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    <span className="font-medium">{item.index}. {item.title}</span>
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Delete slide ${item.index}`}
-                    onClick={() => {
-                      halt()
-                      onDeleteSlide(index)
-                    }}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        {playing ? (
+          <p className="text-sm text-muted-foreground">
+            {canSpeak()
+              ? "Reading this slide. Highlight follows each sentence."
+              : "Highlighting this slide. Chrome or Safari will also read it aloud."}
+          </p>
+        ) : null}
+        {mode === "all" && playing ? (
+          <p className="text-xs text-muted-foreground">
+            Reading the rest of the deck from slide {slide.index}.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -358,8 +398,9 @@ function SlidesPanel({
   onDeleteSlide: () => void
 }) {
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3">
+    <Card className="rounded-[28px]">
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
         <CardTitle>
           Slide {slide.index}: {slide.title}
         </CardTitle>
@@ -367,6 +408,7 @@ function SlidesPanel({
           <Button
             variant="outline"
             size="icon"
+            className="rounded-full"
             aria-label={`Delete slide ${slide.index}`}
             onClick={onDeleteSlide}
           >
@@ -375,6 +417,8 @@ function SlidesPanel({
           <Button
             variant="outline"
             size="icon"
+            className="rounded-full"
+            aria-label="Previous slide"
             disabled={slideIndex === 0}
             onClick={() => onSlideIndex(Math.max(0, slideIndex - 1))}
           >
@@ -383,13 +427,14 @@ function SlidesPanel({
           <Button
             variant="outline"
             size="icon"
+            className="rounded-full"
+            aria-label="Next slide"
             disabled={slideIndex >= doc.slides.length - 1}
-            onClick={() =>
-              onSlideIndex(Math.min(doc.slides.length - 1, slideIndex + 1))
-            }
+            onClick={() => onSlideIndex(Math.min(doc.slides.length - 1, slideIndex + 1))}
           >
             <ChevronRight />
           </Button>
+        </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -439,10 +484,9 @@ function QuizPanel({ doc }: { doc: StudyDoc }) {
 
   if (!questions.length) {
     return (
-      <Card>
+      <Card className="rounded-[28px]">
         <CardContent className="py-8 text-muted-foreground">
-          Not enough lecture text to build a quiz. Import a longer deck or paste
-          notes.
+          Not enough lecture text to build a quiz. Import a longer deck or paste notes.
         </CardContent>
       </Card>
     )
@@ -450,16 +494,16 @@ function QuizPanel({ doc }: { doc: StudyDoc }) {
 
   if (done) {
     return (
-      <Card>
+      <Card className="rounded-[28px]">
         <CardHeader>
           <CardTitle>Quiz complete</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-lg">
+          <p className="text-lg font-bold">
             {score} / {questions.length} correct
           </p>
           <Progress value={(score / questions.length) * 100} />
-          <Button onClick={restart}>
+          <Button className="rounded-full" onClick={restart}>
             <RotateCcw data-icon="inline-start" />
             Run it again
           </Button>
@@ -469,7 +513,7 @@ function QuizPanel({ doc }: { doc: StudyDoc }) {
   }
 
   return (
-    <Card>
+    <Card className="rounded-[28px]">
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardTitle>
@@ -490,8 +534,10 @@ function QuizPanel({ doc }: { doc: StudyDoc }) {
               return (
                 <Button
                   key={option}
-                  variant={isAnswer ? "default" : isWrong ? "destructive" : chosen ? "secondary" : "outline"}
-                  className="h-auto justify-start whitespace-normal py-2 text-left"
+                  variant={
+                    isAnswer ? "default" : isWrong ? "destructive" : chosen ? "secondary" : "outline"
+                  }
+                  className="h-auto justify-start rounded-2xl py-2 text-left whitespace-normal"
                   onClick={() => !revealed && setPicked(option)}
                 >
                   {option}
@@ -505,22 +551,22 @@ function QuizPanel({ doc }: { doc: StudyDoc }) {
             onChange={(event) => setPicked(event.target.value)}
             disabled={revealed}
             placeholder="Type the missing term"
-            className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-10 w-full rounded-2xl border border-input bg-[#f6f4fa] px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
         )}
         {revealed ? (
-          <p className="rounded-lg bg-muted px-3 py-2 text-sm leading-6">
+          <p className="rounded-2xl bg-[#f6f4fa] px-3 py-2 text-sm leading-6">
             <span className="font-medium">From slide {question.slideIndex}. </span>
             {question.explanation}
           </p>
         ) : null}
         <div className="flex gap-2">
           {!revealed ? (
-            <Button onClick={submit} disabled={!picked.trim()}>
+            <Button className="rounded-full" onClick={submit} disabled={!picked.trim()}>
               Check
             </Button>
           ) : (
-            <Button onClick={next}>
+            <Button className="rounded-full" onClick={next}>
               {cursor + 1 >= questions.length ? "See score" : "Next"}
             </Button>
           )}
@@ -538,7 +584,7 @@ function FlashPanel({ doc }: { doc: StudyDoc }) {
 
   if (!card) {
     return (
-      <Card>
+      <Card className="rounded-[28px]">
         <CardContent className="py-8 text-muted-foreground">
           No flashcards yet. Import a longer lecture.
         </CardContent>
@@ -551,19 +597,23 @@ function FlashPanel({ doc }: { doc: StudyDoc }) {
       <button
         type="button"
         onClick={() => setFlipped((value) => !value)}
-        className="min-h-56 w-full rounded-2xl border bg-card px-6 py-10 text-center shadow-sm ring-1 ring-foreground/10"
+        className={cn(
+          "min-h-64 w-full rounded-[28px] px-6 py-10 text-center shadow-sm ring-1 ring-black/5",
+          flipped ? "bg-[#efe8ff]" : "bg-white"
+        )}
       >
-        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+        <p className="text-xs font-bold tracking-wide text-[#8d87a0] uppercase">
           {flipped ? "Answer · slide " + card.slideIndex : "Term"}
         </p>
-        <p className="mt-4 font-heading text-2xl leading-snug sm:text-3xl">
+        <p className="mt-4 text-2xl leading-snug font-extrabold sm:text-3xl">
           {flipped ? card.back : card.front}
         </p>
-        <p className="mt-6 text-sm text-muted-foreground">Tap to flip</p>
+        <p className="mt-6 text-sm font-semibold text-[#8d87a0]">Tap to flip</p>
       </button>
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
+          className="rounded-full"
           disabled={index === 0}
           onClick={() => {
             setIndex((value) => value - 1)
@@ -572,11 +622,12 @@ function FlashPanel({ doc }: { doc: StudyDoc }) {
         >
           Previous
         </Button>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-bold text-[#6d6780]">
           {index + 1} / {cards.length}
         </p>
         <Button
           variant="outline"
+          className="rounded-full"
           disabled={index >= cards.length - 1}
           onClick={() => {
             setIndex((value) => value + 1)
@@ -589,4 +640,3 @@ function FlashPanel({ doc }: { doc: StudyDoc }) {
     </div>
   )
 }
-

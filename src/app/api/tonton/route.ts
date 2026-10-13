@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         {
           role: "system",
           content: [
-            "You are TonTon, a study companion inside PreRound.",
+            "You are TonTon, a study companion inside Çalış Kız.",
             "Answer the student's question using the lecture slides below.",
             "Speak in plain, direct language. Do not invent facts that are not supported by the slides.",
             "If the slides do not cover the question, say so.",

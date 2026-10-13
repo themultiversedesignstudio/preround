@@ -2,6 +2,31 @@ export function canSpeak() {
   return typeof window !== "undefined" && "speechSynthesis" in window
 }
 
+const MALE_NAME =
+  /male|daniel|david|alex|fred|rishi|arthur|aaron|gordon|ralph|george|thomas|bruce|james/i
+const FEMALE_NAME =
+  /female|samantha|victoria|karen|moira|fiona|tessa|veena|susan|zira|hazel|salli|joanna|kendra|ivy|emma|amy|serena|allison/i
+
+function chooseMaleVoice(voices: SpeechSynthesisVoice[]) {
+  return voices.find(
+    (voice) => MALE_NAME.test(`${voice.name} ${voice.voiceURI}`) && !FEMALE_NAME.test(voice.name)
+  )
+}
+
+function whenMaleVoice(): Promise<SpeechSynthesisVoice | undefined> {
+  if (!canSpeak()) return Promise.resolve(undefined)
+  const ready = () => chooseMaleVoice(window.speechSynthesis.getVoices())
+  if (window.speechSynthesis.getVoices().length) return Promise.resolve(ready())
+  return new Promise((resolve) => {
+    const finish = () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", finish)
+      resolve(ready())
+    }
+    window.speechSynthesis.addEventListener("voiceschanged", finish)
+    window.setTimeout(finish, 500)
+  })
+}
+
 export function splitUtterances(text: string) {
   return text
     .split(/(?<=[.!?])\s+/)
@@ -60,12 +85,18 @@ export function startReading(
   if (canSpeak()) {
     // Chrome drops speak() if it runs in the same turn as cancel().
     window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = rate
-    utterance.onerror = () => {}
+    let started = false
     window.setTimeout(() => {
-      if (stopped || !canSpeak()) return
-      window.speechSynthesis.speak(utterance)
+      void whenMaleVoice().then((voice) => {
+        if (stopped || started || !canSpeak()) return
+        started = true
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.rate = rate
+        utterance.pitch = voice ? 1 : 0.75
+        if (voice) utterance.voice = voice
+        utterance.onerror = () => {}
+        window.speechSynthesis.speak(utterance)
+      })
     }, 60)
   }
 
