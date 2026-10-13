@@ -34,8 +34,8 @@ import { cn } from "cn"
 
 const PASTELS = [
   { bg: "bg-[#FFE3BF]", ink: "text-[#8A5A16]", bubble: "bg-white/75" },
-  { bg: "bg-[#E4D7FF]", ink: "text-[#5436A8]", bubble: "bg-white/75" },
-  { bg: "bg-[#D5E6FF]", ink: "text-[#24508F]", bubble: "bg-white/75" },
+  { bg: "bg-[#F3C6CB]", ink: "text-[#7A2434]", bubble: "bg-white/75" },
+  { bg: "bg-[#F0D0C8]", ink: "text-[#7A3A32]", bubble: "bg-white/75" },
 ]
 
 function formatWhen(iso: string) {
@@ -198,17 +198,17 @@ export function LibraryView() {
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="flex min-h-64 w-full flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-[#d9d0ee] bg-[#fbfaff] px-6 py-12 text-center"
+            className="flex min-h-64 w-full flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-[#e7cfd2] bg-[#fdf8f8] px-6 py-12 text-center"
           >
             {busy ? (
               <LoaderCircle className="size-8 animate-spin text-primary" />
             ) : (
-              <span className="grid size-16 place-items-center rounded-3xl bg-[#efe8ff] text-3xl">
+              <span className="grid size-16 place-items-center rounded-3xl bg-[#f8e6e8] text-3xl">
                 🐣
               </span>
             )}
             <div className="space-y-1">
-              <p className="text-lg font-extrabold text-[#241c36]">
+              <p className="text-lg font-extrabold text-[#2c181c]">
                 {query.trim() ? "No lectures match that search" : "Import a lecture"}
               </p>
               <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">
@@ -222,7 +222,7 @@ export function LibraryView() {
           <>
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-extrabold tracking-tight text-[#241c36]">
+                <h2 className="text-lg font-extrabold tracking-tight text-[#2c181c]">
                   New lectures
                 </h2>
                 <button
@@ -244,7 +244,7 @@ export function LibraryView() {
                   return (
                     <article
                       key={doc.id}
-                      className="flex flex-col rounded-[24px] bg-[#fbfaff] p-3 ring-1 ring-black/5"
+                      className="flex flex-col rounded-[24px] bg-[#fdf8f8] p-3 ring-1 ring-black/5"
                     >
                       <div
                         className={cn(
@@ -266,17 +266,17 @@ export function LibraryView() {
                       </div>
                       <div className="flex items-end justify-between gap-3 px-1 pt-3 pb-1">
                         <div className="min-w-0">
-                          <h3 className="truncate text-base font-extrabold text-[#241c36]">
+                          <h3 className="truncate text-base font-extrabold text-[#2c181c]">
                             {doc.name}
                           </h3>
-                          <p className="text-xs font-semibold text-[#8d87a0]">
+                          <p className="text-xs font-semibold text-[#8d656b]">
                             {doc.slides.length} slides
                           </p>
                         </div>
                         <Link
                           href={`/study/${doc.id}`}
                           aria-label={`Study ${doc.name}`}
-                          className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#241c36] shadow-sm ring-1 ring-black/5 hover:bg-[#efe8ff]"
+                          className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#2c181c] shadow-sm ring-1 ring-black/5 hover:bg-[#f8e6e8]"
                         >
                           <ChevronRight className="size-4" />
                         </Link>
@@ -289,17 +289,17 @@ export function LibraryView() {
 
             <section id="my-lectures" className="mt-8">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-lg font-extrabold tracking-tight text-[#241c36]">
+                <h2 className="text-lg font-extrabold tracking-tight text-[#2c181c]">
                   My lectures
                 </h2>
-                <p className="text-sm font-semibold text-[#8d87a0]">
+                <p className="text-sm font-semibold text-[#8d656b]">
                   {filtered.length} saved
                 </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] text-left">
                   <thead>
-                    <tr className="text-xs font-semibold text-[#9a94ab]">
+                    <tr className="text-xs font-semibold text-[#a0787e]">
                       <th className="pb-3 font-semibold">Lecture</th>
                       <th className="pb-3 font-semibold">Added</th>
                       <th className="pb-3 font-semibold">Slides</th>
@@ -326,20 +326,20 @@ export function LibraryView() {
                                 <KindIcon kind={doc.kind} className="size-5" />
                               </span>
                               <div className="min-w-0">
-                                <p className="truncate font-bold text-[#241c36]">{doc.name}</p>
-                                <p className="text-xs text-[#8d87a0]">
+                                <p className="truncate font-bold text-[#2c181c]">{doc.name}</p>
+                                <p className="text-xs text-[#8d656b]">
                                   {doc.slides.length} slides
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 pr-3 text-sm font-semibold text-[#4c4563]">
+                          <td className="py-3 pr-3 text-sm font-semibold text-[#5c3840]">
                             {formatWhen(doc.createdAt)}
                           </td>
-                          <td className="py-3 pr-3 text-sm font-semibold text-[#4c4563]">
+                          <td className="py-3 pr-3 text-sm font-semibold text-[#5c3840]">
                             {doc.slides.length}
                           </td>
-                          <td className="py-3 pr-3 text-sm font-semibold text-[#4c4563]">
+                          <td className="py-3 pr-3 text-sm font-semibold text-[#5c3840]">
                             {kindLabel(doc.kind)}
                           </td>
                           <td className="py-3">
@@ -421,12 +421,12 @@ function ImportCard({
   onPaste: () => void
 }) {
   return (
-    <div className="relative mt-8 rounded-[24px] bg-[#f3eefe] px-4 pt-14 pb-4">
-      <div className="absolute -top-6 left-1/2 grid size-16 -translate-x-1/2 place-items-center rounded-full bg-white text-3xl shadow-sm ring-4 ring-[#f3eefe]">
+    <div className="relative mt-8 rounded-[24px] bg-[#f8ecee] px-4 pt-14 pb-4">
+      <div className="absolute -top-6 left-1/2 grid size-16 -translate-x-1/2 place-items-center rounded-full bg-white text-3xl shadow-sm ring-4 ring-[#f8ecee]">
         <span aria-hidden="true">🐣</span>
       </div>
-      <p className="text-center text-sm font-extrabold text-[#241c36]">Import a lecture</p>
-      <p className="mt-1 text-center text-xs leading-5 text-[#6d6780]">
+      <p className="text-center text-sm font-extrabold text-[#2c181c]">Import a lecture</p>
+      <p className="mt-1 text-center text-xs leading-5 text-[#7a565b]">
         PDF, PowerPoint, or notes. They stay in this browser, and you can delete them.
       </p>
       <button
@@ -456,21 +456,21 @@ function LibraryAside({ docs }: { docs: StudyDoc[] }) {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center text-center">
-        <span className="grid size-24 place-items-center rounded-full bg-[#efe8ff] text-5xl shadow-inner">
+        <span className="grid size-24 place-items-center rounded-full bg-[#f8e6e8] text-5xl shadow-inner">
           <span aria-hidden="true">🐣</span>
         </span>
-        <p className="mt-3 text-lg font-extrabold text-[#241c36]">Çalış Kız</p>
-        <p className="text-sm font-semibold text-[#8d87a0]">This browser</p>
+        <p className="mt-3 text-lg font-extrabold text-[#2c181c]">Çalış Kız</p>
+        <p className="text-sm font-semibold text-[#8d656b]">This browser</p>
       </div>
 
       <MonthCalendar />
 
       <div>
-        <h2 className="mb-3 text-lg font-extrabold tracking-tight text-[#241c36]">
+        <h2 className="mb-3 text-lg font-extrabold tracking-tight text-[#2c181c]">
           Lecture size
         </h2>
         {ranked.length === 0 ? (
-          <p className="rounded-2xl bg-[#f6f4fa] px-4 py-3 text-sm leading-6 text-muted-foreground">
+          <p className="rounded-2xl bg-[#f7f1f2] px-4 py-3 text-sm leading-6 text-muted-foreground">
             After you import a lecture, its size shows up here.
           </p>
         ) : (
@@ -490,7 +490,7 @@ function LibraryAside({ docs }: { docs: StudyDoc[] }) {
                   <span
                     className={cn(
                       "grid size-12 shrink-0 place-items-center rounded-full text-xs font-extrabold",
-                      lead ? "bg-white/20 text-white" : "bg-[#efe8ff] text-primary"
+                      lead ? "bg-white/20 text-white" : "bg-[#f8e6e8] text-primary"
                     )}
                   >
                     {Math.round((doc.slides.length / max) * 100)}%
@@ -499,7 +499,7 @@ function LibraryAside({ docs }: { docs: StudyDoc[] }) {
                     <span
                       className={cn(
                         "block truncate text-sm font-bold",
-                        lead ? "text-white" : "text-[#241c36]"
+                        lead ? "text-white" : "text-[#2c181c]"
                       )}
                     >
                       {doc.name}
@@ -507,14 +507,14 @@ function LibraryAside({ docs }: { docs: StudyDoc[] }) {
                     <span
                       className={cn(
                         "text-xs font-semibold",
-                        lead ? "text-white/80" : "text-[#8d87a0]"
+                        lead ? "text-white/80" : "text-[#8d656b]"
                       )}
                     >
                       {doc.slides.length} slides
                     </span>
                   </span>
                   <ChevronRight
-                    className={cn("size-4 shrink-0", lead ? "text-white" : "text-[#8d87a0]")}
+                    className={cn("size-4 shrink-0", lead ? "text-white" : "text-[#8d656b]")}
                   />
                   <span className="sr-only">{pct}% of the largest lecture</span>
                 </Link>
@@ -548,12 +548,12 @@ function MonthCalendar() {
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-extrabold tracking-tight text-[#241c36]">{label}</h2>
+        <h2 className="text-lg font-extrabold tracking-tight text-[#2c181c]">{label}</h2>
         <div className="flex gap-1">
           <button
             type="button"
             aria-label="Previous month"
-            className="grid size-8 place-items-center rounded-full text-[#6d6780] hover:bg-[#f4f0ff]"
+            className="grid size-8 place-items-center rounded-full text-[#7a565b] hover:bg-[#f8eeef]"
             onClick={() => setCursor(new Date(year, month - 1, 1))}
           >
             <ChevronLeft className="size-4" />
@@ -561,19 +561,19 @@ function MonthCalendar() {
           <button
             type="button"
             aria-label="Next month"
-            className="grid size-8 place-items-center rounded-full text-[#6d6780] hover:bg-[#f4f0ff]"
+            className="grid size-8 place-items-center rounded-full text-[#7a565b] hover:bg-[#f8eeef]"
             onClick={() => setCursor(new Date(year, month + 1, 1))}
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-y-1 text-center text-[11px] font-bold text-[#b0a9c2]">
+      <div className="grid grid-cols-7 gap-y-1 text-center text-[11px] font-bold text-[#c4a0a6]">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <span key={day}>{day}</span>
         ))}
       </div>
-      <div className="mt-2 grid grid-cols-7 gap-y-1 text-center text-sm font-semibold text-[#4c4563]">
+      <div className="mt-2 grid grid-cols-7 gap-y-1 text-center text-sm font-semibold text-[#5c3840]">
         {cells.map((day, index) => {
           const isToday =
             day === today.getDate() &&

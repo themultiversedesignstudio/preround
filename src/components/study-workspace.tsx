@@ -65,7 +65,7 @@ export function StudyWorkspace({ id }: { id: string }) {
   if (!doc) {
     return (
       <AppShell title="Library" nav={[{ label: "Library", icon: House, href: "/", active: true }]}>
-        <div className="max-w-lg space-y-3 rounded-[24px] bg-[#fbfaff] p-6 ring-1 ring-black/5">
+        <div className="max-w-lg space-y-3 rounded-[24px] bg-[#fdf8f8] p-6 ring-1 ring-black/5">
           <h2 className="text-2xl font-extrabold tracking-tight">This lecture is not on this device</h2>
           <p className="text-sm leading-6 text-muted-foreground">
             Çalış Kız keeps each lecture in the browser that imported it. Import the file again here.
@@ -124,14 +124,14 @@ export function StudyWorkspace({ id }: { id: string }) {
         })),
       ]}
       footer={
-        <div className="rounded-[24px] bg-[#f3eefe] p-4">
-          <p className="text-sm font-extrabold text-[#241c36]">On this device</p>
-          <p className="mt-1 text-xs leading-5 text-[#6d6780]">
+        <div className="rounded-[24px] bg-[#f8ecee] p-4">
+          <p className="text-sm font-extrabold text-[#2c181c]">On this device</p>
+          <p className="mt-1 text-xs leading-5 text-[#7a565b]">
             {lecture.slides.length} slides stay in this browser. Delete the lecture whenever you want.
           </p>
           <button
             type="button"
-            className="mt-3 h-10 w-full rounded-xl bg-white text-sm font-bold text-[#241c36] ring-1 ring-black/5"
+            className="mt-3 h-10 w-full rounded-xl bg-white text-sm font-bold text-[#2c181c] ring-1 ring-black/5"
             onClick={() => {
               stopSpeaking()
               deleteDoc(lecture.id)
@@ -161,7 +161,7 @@ export function StudyWorkspace({ id }: { id: string }) {
             onClick={() => openSection(section.id)}
             className={cn(
               "shrink-0 rounded-full px-3 py-1.5 text-sm font-bold",
-              tab === section.id ? "bg-[#efe8ff] text-[#2a2340]" : "bg-[#f4f1fb] text-[#6d6780]"
+              tab === section.id ? "bg-[#f8e6e8] text-[#3d1c22]" : "bg-[#f7eeef] text-[#7a565b]"
             )}
           >
             {section.label}
@@ -255,12 +255,12 @@ function ListenPanel({
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-bold tracking-wide text-[#8d87a0] uppercase">
+            <p className="text-xs font-bold tracking-wide text-[#8d656b] uppercase">
               Slide {slide.index} of {doc.slides.length}
             </p>
             <CardTitle className="mt-1 text-xl">{slide.title}</CardTitle>
           </div>
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#efe8ff] text-primary">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#f8e6e8] text-primary">
             <Volume2 className="size-5" />
           </span>
         </div>
@@ -334,11 +334,11 @@ function ListenPanel({
             </Button>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-[#6d6780]">
+            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-[#7a565b]">
               <span className="shrink-0">Jump</span>
               <select
                 value={slideIndex}
-                className="h-9 min-w-0 flex-1 rounded-full border border-input bg-[#f6f4fa] px-3 text-sm font-semibold text-foreground outline-none"
+                className="h-9 min-w-0 flex-1 rounded-full border border-input bg-[#f7f1f2] px-3 text-sm font-semibold text-foreground outline-none"
                 onChange={(event) => {
                   halt()
                   onSlideIndex(Number(event.target.value))
@@ -351,7 +351,7 @@ function ListenPanel({
                 ))}
               </select>
             </label>
-            <div className="flex items-center gap-3 text-sm font-semibold text-[#6d6780]">
+            <div className="flex items-center gap-3 text-sm font-semibold text-[#7a565b]">
               <span>Speed {rate.toFixed(1)}×</span>
               <Slider
                 className="w-32"
@@ -551,11 +551,11 @@ function QuizPanel({ doc }: { doc: StudyDoc }) {
             onChange={(event) => setPicked(event.target.value)}
             disabled={revealed}
             placeholder="Type the missing term"
-            className="h-10 w-full rounded-2xl border border-input bg-[#f6f4fa] px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-10 w-full rounded-2xl border border-input bg-[#f7f1f2] px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
         )}
         {revealed ? (
-          <p className="rounded-2xl bg-[#f6f4fa] px-3 py-2 text-sm leading-6">
+          <p className="rounded-2xl bg-[#f7f1f2] px-3 py-2 text-sm leading-6">
             <span className="font-medium">From slide {question.slideIndex}. </span>
             {question.explanation}
           </p>
@@ -599,16 +599,16 @@ function FlashPanel({ doc }: { doc: StudyDoc }) {
         onClick={() => setFlipped((value) => !value)}
         className={cn(
           "min-h-64 w-full rounded-[28px] px-6 py-10 text-center shadow-sm ring-1 ring-black/5",
-          flipped ? "bg-[#efe8ff]" : "bg-white"
+          flipped ? "bg-[#f8e6e8]" : "bg-white"
         )}
       >
-        <p className="text-xs font-bold tracking-wide text-[#8d87a0] uppercase">
+        <p className="text-xs font-bold tracking-wide text-[#8d656b] uppercase">
           {flipped ? "Answer · slide " + card.slideIndex : "Term"}
         </p>
         <p className="mt-4 text-2xl leading-snug font-extrabold sm:text-3xl">
           {flipped ? card.back : card.front}
         </p>
-        <p className="mt-6 text-sm font-semibold text-[#8d87a0]">Tap to flip</p>
+        <p className="mt-6 text-sm font-semibold text-[#8d656b]">Tap to flip</p>
       </button>
       <div className="flex items-center justify-between">
         <Button
@@ -622,7 +622,7 @@ function FlashPanel({ doc }: { doc: StudyDoc }) {
         >
           Previous
         </Button>
-        <p className="text-sm font-bold text-[#6d6780]">
+        <p className="text-sm font-bold text-[#7a565b]">
           {index + 1} / {cards.length}
         </p>
         <Button
