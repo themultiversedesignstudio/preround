@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { createPortal } from "react-dom"
 import { MessageSquare, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { isSampleLectureId } from "@/lib/sample-lecture"
 import type { Slide, StudyDoc } from "@/lib/types"
 import { cn } from "cn"
 
@@ -15,14 +15,7 @@ type Turn = {
   sources?: Slide[]
 }
 
-const SAMPLE_PROMPTS = [
-  "What are the three phases of wound healing?",
-  "When do you choose a flap instead of a graft?",
-  "What does a congested flap look like?",
-]
-
 function promptsFor(doc: StudyDoc) {
-  if (isSampleLectureId(doc.id)) return SAMPLE_PROMPTS
   return doc.slides.slice(0, 3).map((slide) => `Explain “${slide.title}”`)
 }
 
@@ -37,12 +30,17 @@ export function LectureAssistant({
   const [question, setQuestion] = useState("")
   const [thread, setThread] = useState<Turn[]>([])
   const [busy, setBusy] = useState(false)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
   const endRef = useRef<HTMLDivElement>(null)
   const prompts = promptsFor(doc)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" })
-  }, [thread, busy])
+  }, [thread, busy, open])
 
   async function ask(text: string) {
     const q = text.trim()
@@ -88,134 +86,196 @@ export function LectureAssistant({
     setOpen(false)
   }
 
+  const panel = (showClose: boolean) => (
+    <AssistantBody
+      prompts={prompts}
+      thread={thread}
+      busy={busy}
+      question={question}
+      endRef={endRef}
+      onAsk={ask}
+      onQuestion={setQuestion}
+      onOpenSource={openSource}
+      onClose={() => setOpen(false)}
+      showClose={showClose}
+    />
+  )
+
+  return (
+    <>
+      <div className="flex min-h-0 flex-1 flex-col">{panel(false)}</div>
+      {mounted
+        ? createPortal(
+            <MobileTonTon open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}>
+              {panel(true)}
+            </MobileTonTon>,
+            document.body
+          )
+        : null}
+    </>
+  )
+}
+
+function MobileTonTon({
+  open,
+  onOpen,
+  onClose,
+  children,
+}: {
+  open: boolean
+  onOpen: () => void
+  onClose: () => void
+  children: React.ReactNode
+}) {
   return (
     <>
       {open ? null : (
         <Button
-          className="fixed right-4 bottom-4 z-30 shadow-md lg:hidden"
-          onClick={() => setOpen(true)}
+          className="fixed right-4 bottom-4 z-30 h-11 rounded-full px-4 shadow-lg xl:hidden"
+          onClick={onOpen}
         >
           <MessageSquare />
           TonTon
         </Button>
       )}
-
       {open ? (
-        <button
-          type="button"
-          aria-label="Close TonTon"
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
-          onClick={() => setOpen(false)}
-        />
-      ) : null}
-
-      <aside
-        className={cn(
-          "flex-col overflow-hidden rounded-xl border bg-card shadow-sm ring-1 ring-foreground/10",
-          "lg:sticky lg:top-6 lg:flex lg:h-[calc(100dvh-9rem)]",
-          open
-            ? "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:flex max-lg:w-full max-lg:max-w-sm max-lg:rounded-none max-lg:border-y-0 max-lg:border-r-0 max-lg:shadow-xl"
-            : "max-lg:hidden"
-        )}
-      >
-        <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
-          <div>
-            <p className="font-heading text-lg leading-none">TonTon</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              ChatGPT answers from this lecture.
-            </p>
+        <>
+          <button
+            type="button"
+            aria-label="Close TonTon"
+            className="fixed inset-0 z-40 bg-black/25 xl:hidden"
+            onClick={onClose}
+          />
+          <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-white shadow-xl xl:hidden">
+            {children}
           </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="lg:hidden"
-            onClick={() => setOpen(false)}
-          >
+        </>
+      ) : null}
+    </>
+  )
+}
+
+function AssistantBody({
+  prompts,
+  thread,
+  busy,
+  question,
+  endRef,
+  onAsk,
+  onQuestion,
+  onOpenSource,
+  onClose,
+  showClose,
+}: {
+  prompts: string[]
+  thread: Turn[]
+  busy: boolean
+  question: string
+  endRef: React.RefObject<HTMLDivElement | null>
+  onAsk: (text: string) => void
+  onQuestion: (value: string) => void
+  onOpenSource: (slide: Slide) => void
+  onClose: () => void
+  showClose: boolean
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-12 place-items-center rounded-full bg-[#f8e6e8] text-2xl">
+            <span aria-hidden="true">🐣</span>
+          </span>
+          <div>
+            <p className="text-lg font-extrabold tracking-tight text-[#2a1619]">TonTon</p>
+            <p className="text-xs text-muted-foreground">ChatGPT, from this lecture</p>
+          </div>
+        </div>
+        {showClose ? (
+          <Button variant="ghost" size="icon-sm" className="xl:hidden" onClick={onClose}>
             <X />
             <span className="sr-only">Close</span>
           </Button>
-        </div>
+        ) : null}
+      </div>
 
-        <div className="flex flex-wrap gap-2 border-b px-4 py-3">
-          {prompts.map((item) => (
-            <Button
-              key={item}
-              variant="outline"
-              size="sm"
-              className="h-auto whitespace-normal text-left"
-              onClick={() => ask(item)}
-            >
-              {item}
-            </Button>
-          ))}
-        </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {prompts.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className="rounded-full bg-[#f7eeef] px-3 py-1.5 text-left text-xs font-semibold text-[#5c3840] hover:bg-[#f8e6e8]"
+            onClick={() => onAsk(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
-          {thread.length === 0 ? (
-            <p className="text-sm leading-6 text-muted-foreground">
-              Ask TonTon about this deck. Your question and the slide text are
-              sent to ChatGPT.
+      <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto">
+        {thread.length === 0 ? (
+          <p className="text-sm leading-6 text-muted-foreground">
+            Ask TonTon about this lecture. Your question and the slide text go to ChatGPT.
+          </p>
+        ) : null}
+        {thread.map((entry, index) => (
+          <div
+            key={`${entry.role}-${index}`}
+            className={cn(
+              "rounded-2xl px-3 py-2 text-sm leading-6 whitespace-pre-wrap",
+              entry.role === "you" ? "bg-[#f8e6e8]" : "bg-[#f7f1f2]"
+            )}
+          >
+            <p className="mb-1 text-[11px] font-bold tracking-wide text-[#7a565b] uppercase">
+              {entry.role === "you" ? "You" : "TonTon"}
             </p>
-          ) : null}
-          {thread.map((entry, index) => (
-            <div
-              key={`${entry.role}-${index}`}
-              className={cn(
-                "rounded-xl px-3 py-2 text-sm leading-6 whitespace-pre-wrap",
-                entry.role === "you" ? "bg-primary/10" : "bg-muted"
-              )}
-            >
-              <p className="mb-1 text-xs font-medium tracking-wide uppercase">
-                {entry.role === "you" ? "You" : "TonTon"}
-              </p>
-              {entry.text}
-              {entry.sources?.length ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {entry.sources.map((slide) => (
-                    <Button
-                      key={slide.index}
-                      variant="outline"
-                      size="xs"
-                      onClick={() => openSource(slide)}
-                    >
-                      Slide {slide.index}
-                    </Button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ))}
-          {busy ? (
-            <p className="text-sm text-muted-foreground">TonTon is reading the slides…</p>
-          ) : null}
-          <div ref={endRef} />
-        </div>
+            {entry.text}
+            {entry.sources?.length ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {entry.sources.map((slide) => (
+                  <Button
+                    key={slide.index}
+                    variant="outline"
+                    size="xs"
+                    className="rounded-full"
+                    onClick={() => onOpenSource(slide)}
+                  >
+                    Slide {slide.index}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ))}
+        {busy ? (
+          <p className="text-sm text-muted-foreground">TonTon is reading the slides…</p>
+        ) : null}
+        <div ref={endRef} />
+      </div>
 
-        <form
-          className="flex flex-col gap-2 border-t p-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            ask(question)
+      <form
+        className="mt-3 flex flex-col gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          onAsk(question)
+        }}
+      >
+        <Textarea
+          value={question}
+          onChange={(event) => onQuestion(event.target.value)}
+          placeholder="Ask TonTon about these slides…"
+          disabled={busy}
+          className="min-h-16 rounded-2xl bg-[#f7f1f2]"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault()
+              onAsk(question)
+            }
           }}
-        >
-          <Textarea
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Ask TonTon about these slides…"
-            disabled={busy}
-            className="min-h-16"
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault()
-                ask(question)
-              }
-            }}
-          />
-          <Button type="submit" className="self-end" disabled={busy}>
-            Ask TonTon
-          </Button>
-        </form>
-      </aside>
-    </>
+        />
+        <Button type="submit" className="h-10 self-end rounded-full px-4" disabled={busy}>
+          Ask TonTon
+        </Button>
+      </form>
+    </div>
   )
 }
